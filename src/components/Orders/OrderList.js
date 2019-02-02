@@ -2,6 +2,7 @@ import axios from 'axios'
 import React, { Component } from 'react'
 import { Link } from 'react-router-dom'
 import { orders_url, customers_url } from '../../config.env'
+import Loader from 'react-loader-spinner'
 
 class OrderList extends Component {
 
@@ -10,11 +11,14 @@ class OrderList extends Component {
     customers: [],
     query_customer: null,
     query_date_start: null,
-    query_date_end: null
+    query_date_end: null,
+    loading: true,
   }
 
   async componentDidMount() {
+    this.setState({ loading: true })
     await this.loadData()
+    this.setState({ loading: false })
   }
 
   loadData = async () => {
@@ -28,13 +32,13 @@ class OrderList extends Component {
   }
 
   queryOrders = async (params) => {
-    let response = await axios.get(orders_url, {params})
+    let response = await axios.get(orders_url, { params })
     let orders = response.data.orders
 
-    this.setState({orders})
+    this.setState({ orders })
   }
 
-  handleResetFilters = e => {
+  handleResetFilters = async e => {
     e.preventDefault()
     document.getElementById("query_form").reset()
     let query_customer = null
@@ -44,8 +48,11 @@ class OrderList extends Component {
       query_customer,
       query_date_start,
       query_date_end,
+      loading: true
     })
-    this.loadData()
+
+    await this.loadData()
+    this.setState({loading: false})
   }
 
   handleChange = e => {
@@ -69,11 +76,13 @@ class OrderList extends Component {
     return query_params
   }
 
-  handleSubmit = e => {
+  handleSubmit = async e => {
     e.preventDefault()
 
+    this.setState({loading: true})
     let query_params = this.prepareQueryParams()
-    this.queryOrders(query_params)
+    await this.queryOrders(query_params)
+    this.setState({loading: false})
 
   }
 
@@ -93,7 +102,7 @@ class OrderList extends Component {
             </li>
           )
         })
-  
+
         return (
           <tr key={order.order_id}>
             <td>{order.creation_date}</td>
@@ -107,7 +116,7 @@ class OrderList extends Component {
                   <font color="red">No Products Selected</font>
                 ) : (<ul>{order_details}</ul>)
               }
-              
+
             </td>
           </tr>
         )
@@ -124,21 +133,50 @@ class OrderList extends Component {
       })
     }
 
+    let table = (
+      <table className="table table-hover" style={{border: '1px solid black'}}>
+        <thead className="thead-dark">
+          <tr>
+            <th>Creation Date</th>
+            <th>Order ID</th>
+            <th>Customer</th>
+            <th>Total $</th>
+            <th>Delivery Address</th>
+            <th>Products</th>
+          </tr>
+        </thead>
+        <tbody>
+          {orders}
+        </tbody>
+      </table>
+    )
+
+    if (this.state.loading) {
+      table = (
+        <Loader
+          type="Oval"
+          color="#00BFFF"
+          height="100"
+          width="100"
+        />
+      )
+    }
+
     return (
       <main role="main" className="container">
         <div className="jumbotron">
           <div>
             <Link className="btn btn-primary" to={'/orders/create'}>Nueva Orden</Link>
           </div>
-          <div style={{border:"1px solid black", marginBottom: "1cm", marginTop: "1cm"}}>
+          <div style={{ border: "1px solid black", marginBottom: "1cm", marginTop: "1cm" }}>
             <form id="query_form" onSubmit={this.handleSubmit}>
-              <h5 className="grey-text text-darken-3" style={{marginTop:'0.5cm'}}>Filtros de Busqueda</h5>
+              <h5 className="grey-text text-darken-3" style={{ marginTop: '0.5cm' }}>Filtros de Busqueda</h5>
 
               <div className="form-row">
                 <div className="col">
-                  
+
                   <label htmlFor="query_customer">Customer</label>
-                  
+
                   <select id="query_customer"
                     className="form-control form-control-sm"
                     onChange={this.handleChange}>
@@ -148,7 +186,7 @@ class OrderList extends Component {
                 </div>
 
                 <div className="col">
-                  <label htmlFor="query_date_start">Fecha Inicial</label>                                                                                                                                                        
+                  <label htmlFor="query_date_start">Fecha Inicial</label>
                   <input type="date"
                     id="query_date_start"
                     className="form-control form-control-sm"
@@ -168,7 +206,7 @@ class OrderList extends Component {
                 </div>
               </div>
 
-              <div className="form-row" style={{marginTop: "1cm", marginBottom: "0.5cm"}}>
+              <div className="form-row" style={{ marginTop: "1cm", marginBottom: "0.5cm" }}>
                 <div className="col">
                   <button className="btn btn-primary">Buscar</button>
                   <button className="btn btn-secondary" onClick={this.handleResetFilters}>limpiar filtros</button>
@@ -176,22 +214,8 @@ class OrderList extends Component {
               </div>
             </form>
           </div>
-          
-          <table className="table table-hover">
-            <thead className="thead-dark">
-              <tr>
-                <th>Creation Date</th>
-                <th>Order ID</th>
-                <th>Customer</th>
-                <th>Total $</th>
-                <th>Delivery Address</th>
-                <th>Products</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders}
-            </tbody>
-          </table>
+          {table}
+
         </div>
       </main>
 
