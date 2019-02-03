@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import {BrowserRouter, Switch, Route} from 'react-router-dom'
 import Navbar from './components/Layout/Navbar'
 import OrderList from './components/Orders/OrderList'
+import OrderCreate from './components/Orders/OrderCreate'
 import './App.css';
 
 class App extends Component {
@@ -12,6 +13,8 @@ class App extends Component {
           <Navbar/>
           <Switch>
             <Route exact path='/' component={OrderList}/>
+            <Route exact path='/orders' component={OrderList}/>
+            <Route exact path='/orders/create' component={OrderCreate}/>
             
           </Switch>
         </div>
@@ -21,8 +24,3 @@ class App extends Component {
 }
 
 export default App;
-
-/*
-<Route exact path='/orders' component={OrderList}/>
-            <Route exact path='/orders/create' component={OrderCreate}/>
-* */

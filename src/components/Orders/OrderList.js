@@ -134,7 +134,7 @@ class OrderList extends Component {
     }
 
     let table = (
-      <table className="table table-hover" style={{border: '1px solid black'}}>
+      <table className="table table-hover table-striped" style={{border: '1px solid black'}}>
         <thead className="thead-dark">
           <tr>
             <th>Creation Date</th>
