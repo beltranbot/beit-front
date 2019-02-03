@@ -13,6 +13,12 @@ class OrderList extends Component {
     query_date_start: null,
     query_date_end: null,
     loading: true,
+    loading_changing_page: false,
+    current_page: 1,
+    last_page: 1,
+    prev_page_url: null,
+    next_page_url: null,
+    total: 0
   }
 
   async componentDidMount() {
@@ -21,21 +27,42 @@ class OrderList extends Component {
     this.setState({ loading: false })
   }
 
+  parsePaginationData = (orders) => {
+    let current_page = orders.current_page
+    let last_page = orders.last_page
+    let prev_page_url = orders.prev_page_url
+    let next_page_url = orders.next_page_url
+    let total = orders.total
+    this.setState({
+      current_page,
+      last_page,
+      prev_page_url,
+      next_page_url,
+      total,
+    })
+  }
+
   loadData = async () => {
     let response = await axios.get(orders_url)
-    let orders = response.data.orders
+    let orders = response.data.orders.data
+    this.parsePaginationData(response.data.orders)
 
     response = await axios.get(customers_url)
     let customers = response.data.customers
 
-    this.setState({ orders, customers })
+    this.setState({
+      orders, customers
+    })
   }
 
   queryOrders = async (params) => {
     let response = await axios.get(orders_url, { params })
-    let orders = response.data.orders
+    let orders = response.data.orders.data
+    this.parsePaginationData(response.data.orders)
 
-    this.setState({ orders })
+    this.setState({
+      orders
+    })
   }
 
   handleResetFilters = async e => {
@@ -84,6 +111,37 @@ class OrderList extends Component {
     await this.queryOrders(query_params)
     this.setState({loading: false})
 
+  }
+
+  handlePagination = async (type, page = null) => {
+    if (this.state.loading_changing_page || this.state.loading) return
+    let url = null
+    this.setState({loading_changing_page: true, loading: true})
+    if (type === 'previous' && this.state.prev_page_url !== null) {
+      url = this.state.prev_page_url
+    } else if (type === 'next' && this.state.next_page_url !== null) {
+      url = this.state.next_page_url
+    } else if (type === 'number' && page) {
+      url = orders_url + `?page=${page}`
+    }
+
+    if (!url) {
+      this.setState({
+        loading_changing_page: false,
+        loading: false
+      })
+      return
+    }
+    let query_params = this.prepareQueryParams()
+    let response = await axios.get(url, {params: query_params})
+    let orders = response.data.orders.data
+    this.parsePaginationData(response.data.orders)
+
+    this.setState({
+      orders,
+      loading_changing_page: false,
+      loading: false
+    })
   }
 
   render() {
@@ -162,6 +220,31 @@ class OrderList extends Component {
       )
     }
 
+    let pagination = null
+
+    if (this.state.orders.length > 0) {
+      let links = []
+
+      for (let i = 1; i <= this.state.last_page; i++ ) {
+        let classes = this.state.current_page === i ? "page-item active" : "page-item"
+        links.push(
+          <li key={i} className={classes}><button className="page-link" onClick={this.handlePagination.bind(this, 'number', i)}>{i}</button></li>
+        )
+      }
+      pagination = (
+        <div>
+          <nav aria-label="Page navigation">
+            <ul className="pagination">
+              <li className="page-item"><button className="page-link" onClick={this.handlePagination.bind(this, 'previous', 0)}>Previous</button></li>
+              {links}
+              <li className="page-item"><button className="page-link" onClick={this.handlePagination.bind(this, 'next', 0)}>Next</button></li>
+            </ul>
+          </nav>
+          <p><strong>Total:</strong> {this.state.total}</p>
+        </div>
+      )
+    }
+
     return (
       <main role="main" className="container">
         <div className="jumbotron">
@@ -214,6 +297,7 @@ class OrderList extends Component {
               </div>
             </form>
           </div>
+          {pagination}
           {table}
 
         </div>
